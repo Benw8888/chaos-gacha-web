@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Chaos Gacha</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --bg: #0d0d12;
+    --bg-2: #1a1a22;
+    --panel: #1c1c26;
+    --panel-2: #232330;
+    --panel-border: rgba(255, 255, 255, 0.08);
+    --panel-border-strong: rgba(255, 255, 255, 0.16);
+    --text: #f2f2f6;
+    --muted: #8b8b9a;
+    --muted-2: #6b6b78;
+    --accent: #11d939;
+    --button-bg: #141420;
+
+    --tier-trash: #a39589;
+    --tier-common: #c8a97e;
+    --tier-uncommon: #aed1d1;
+    --tier-rare: #11d939;
+    --tier-elite: #3b9dff;
+    --tier-epic: #9b5cff;
+    --tier-legendary: #f7d40a;
+    --tier-mythical: #ff7de4;
+    --tier-divine: #ffa84b;
+    --tier-transcendent: #ff4d4d;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; min-height: 100vh; }
+  body {
+    background:
+      radial-gradient(ellipse 1400px 700px at 20% -10%, rgba(155, 92, 255, 0.18), transparent 60%),
+      radial-gradient(ellipse 1200px 800px at 90% 110%, rgba(17, 217, 57, 0.12), transparent 60%),
+      linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+    background-attachment: fixed;
+    color: var(--text);
+    font-family: 'Courier New', Courier, monospace;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px 28px;
+  }
+
+  /* Title */
+  .title-wrap { text-align: center; margin-bottom: 30px; }
+  h1 {
+    font-weight: 300;
+    font-size: 44px;
+    letter-spacing: 10px;
+    margin: 0 0 8px;
+    background: linear-gradient(90deg, #f7d40a, #ff7de4, #3b9dff);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: shimmer 6s linear infinite;
+  }
+  @keyframes shimmer {
+    0% { background-position: 0% center; }
+    100% { background-position: 200% center; }
+  }
+  .subtitle {
+    color: var(--muted);
+    font-size: 13px;
+    letter-spacing: 1px;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 1180px;
+    display: grid;
+    grid-template-columns: 200px 1fr 240px;
+    gap: 24px;
+  }
+  @media (max-width: 960px) {
+    .container { grid-template-columns: 1fr; }
+  }
+
+  .panel {
+    background: linear-gradient(145deg, var(--panel), var(--panel-2));
+    border: 1px solid var(--panel-border);
+    border-radius: 12px;
+    padding: 18px;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.25);
+  }
+  .panel h2 {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--muted);
+    margin: 0 0 14px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    text-align: center;
+  }
+
+  .btn {
+    display: block;
+    width: 100%;
+    padding: 11px 12px;
+    margin-bottom: 8px;
+    background: var(--button-bg);
+    color: var(--text);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s ease;
+    letter-spacing: 0.5px;
+  }
+  .btn:hover {
+    border-color: var(--panel-border-strong);
+    background: #1a1a28;
+  }
+  .btn.active {
+    color: var(--accent);
+    border-color: var(--accent);
+    box-shadow: 0 0 18px rgba(17, 217, 57, 0.22);
+  }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    min-height: 540px;
+  }
+
+  .result-box {
+    width: 100%;
+    min-height: 340px;
+    padding: 36px 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    position: relative;
+    transition: box-shadow 0.5s ease, border-color 0.5s ease;
+  }
+  .result-box.tier-glow {
+    box-shadow: 0 0 60px var(--glow-color, rgba(17, 217, 57, 0.18)),
+                0 4px 30px rgba(0, 0, 0, 0.3);
+  }
+  .result-tier {
+    font-size: 14px;
+    letter-spacing: 4px;
+    margin-bottom: 12px;
+    font-weight: 500;
+    opacity: 0.9;
+  }
+  .result-name {
+    font-size: 32px;
+    margin-bottom: 10px;
+    line-height: 1.15;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-shadow: 0 0 24px var(--glow-color, transparent);
+  }
+  .result-id {
+    color: var(--muted-2);
+    font-size: 20px;
+    font-weight: 300;
+    margin-right: 4px;
+  }
+  .result-rarity {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 22px;
+    letter-spacing: 1px;
+  }
+  .result-desc {
+    font-size: 14px;
+    line-height: 1.65;
+    max-width: 720px;
+    color: #d0d0dc;
+  }
+  .placeholder { color: var(--muted-2); font-size: 16px; letter-spacing: 1px; }
+
+  .result-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    animation: fadeIn 0.4s cubic-bezier(0.2, 0.7, 0.3, 1);
+  }
+  @keyframes fadeIn {
+    0% { opacity: 0; transform: translateY(8px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+
+  .copy-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    opacity: 0;
+    transition: all 0.2s;
+  }
+  .result-box.has-result .copy-btn { opacity: 1; }
+  .copy-btn:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: rgba(17, 217, 57, 0.05);
+  }
+  .copy-btn.copied { color: var(--accent); border-color: var(--accent); }
+
+  .controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    width: 100%;
+  }
+  .slider-row {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    flex-wrap: wrap;
+  }
+  .slider-row label {
+    color: var(--muted);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  input[type="number"] {
+    width: 64px;
+    padding: 7px 10px;
+    background: #141420;
+    color: var(--text);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 13px;
+    text-align: center;
+  }
+  input[type="number"]:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .roll-btn {
+    padding: 18px 80px;
+    background: linear-gradient(135deg, #1a1a28, #22222f);
+    color: var(--text);
+    border: 1px solid var(--panel-border-strong);
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 22px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 8px;
+    transition: all 0.15s;
+    position: relative;
+    overflow: hidden;
+  }
+  .roll-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+    transform: translateX(-100%);
+    transition: transform 0.6s;
+  }
+  .roll-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 0 24px rgba(17, 217, 57, 0.28);
+  }
+  .roll-btn:hover::before { transform: translateX(100%); }
+  .roll-btn:active { transform: scale(0.97); }
+  .roll-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .status {
+    font-size: 11px;
+    color: var(--muted-2);
+    text-align: center;
+    letter-spacing: 1px;
+  }
+
+  .filter-row, .font-row {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    font-size: 12px;
+    color: var(--muted);
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .filter-row label, .font-row label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .filter-row input[type="checkbox"] {
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+  .font-row select {
+    background: #141420;
+    color: var(--text);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-family: inherit;
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  .footer {
+    margin-top: 44px;
+    color: var(--muted-2);
+    font-size: 11px;
+    text-align: center;
+    line-height: 1.8;
+    max-width: 780px;
+    letter-spacing: 0.5px;
+  }
+  .footer a {
+    color: var(--muted);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--muted-2);
+  }
+  .footer a:hover { color: var(--text); border-bottom-color: var(--muted); }
+
+  /* Settings disclosure (collapse filters + font into a small section) */
+  .options-toggle {
+    font-size: 11px;
+    color: var(--muted-2);
+    cursor: pointer;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    user-select: none;
+    padding: 4px 0;
+    transition: color 0.15s;
+  }
+  .options-toggle:hover { color: var(--muted); }
+  .options-panel {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    width: 100%;
+  }
+  .options-panel.open {
+    max-height: 180px;
+  }
+  .options-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-top: 10px;
+  }
+</style>
+</head>
+<body>
+
+<div class="title-wrap">
+  <h1>CHAOS GACHA</h1>
+  <div class="subtitle">Roll for powers from the infinite multiverse</div>
+</div>
+
+<div class="container">
+  <!-- Categories -->
+  <div class="panel">
+    <h2>Category</h2>
+    <button class="btn" data-category="ability">Abilities</button>
+    <button class="btn" data-category="item">Items</button>
+    <button class="btn" data-category="trait">Traits</button>
+    <button class="btn" data-category="skill">Skills</button>
+    <button class="btn" data-category="familiar">Familiars</button>
+    <button class="btn" data-category="random">Random</button>
+  </div>
+
+  <!-- Main Display -->
+  <div class="main">
+    <div class="result-box panel" id="resultBox">
+      <div class="placeholder">Select a category and press ROLL</div>
+      <button class="copy-btn" id="copyBtn" title="Copy to clipboard">COPY</button>
+    </div>
+
+    <div class="controls">
+      <div class="slider-row">
+        <label>Min <input type="number" id="minInput" min="0" max="9.9" step="0.1" value="0.0"></label>
+        <label>Avg <input type="number" id="avgInput" min="0" max="9.9" step="0.1" value="1.3"></label>
+        <label>Max <input type="number" id="maxInput" min="0" max="9.9" step="0.1" value="4.3"></label>
+      </div>
+      <button class="roll-btn" id="rollBtn" disabled>ROLL</button>
+      <div class="options-toggle" id="optionsToggle">▸ Options</div>
+      <div class="options-panel" id="optionsPanel">
+        <div class="options-inner">
+          <div class="filter-row">
+            <label><input type="checkbox" id="pgMode" checked> PG mode</label>
+            <label><input type="checkbox" id="classicFamiliar"> Classic familiars only</label>
+            <label><input type="checkbox" id="noScifi"> No sci-fi</label>
+            <label><input type="checkbox" id="noTome"> No tome</label>
+          </div>
+          <div class="font-row">
+            <label for="fontSelect">Font</label>
+            <select id="fontSelect">
+              <option value="'Courier New', Courier, monospace">Courier</option>
+              <option value="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif">System</option>
+              <option value="Arial, sans-serif">Arial</option>
+              <option value="'Times New Roman', Times, serif">Times New Roman</option>
+              <option value="'Comic Sans MS', 'Comic Sans', cursive">Comic Sans MS</option>
+              <option value="Papyrus, fantasy">Papyrus</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="status" id="status">Loading data…</div>
+    </div>
+  </div>
+
+  <!-- Tickets -->
+  <div class="panel">
+    <h2>Ticket</h2>
+    <button class="btn" data-ticket="0">Bronze</button>
+    <button class="btn" data-ticket="1">Silver</button>
+    <button class="btn" data-ticket="2">Gold</button>
+    <button class="btn" data-ticket="3">Platinum</button>
+    <button class="btn" data-ticket="4">Diamond</button>
+    <button class="btn" data-ticket="5">Legendary</button>
+    <button class="btn" data-ticket="6">Mythical</button>
+    <button class="btn" data-ticket="7">Divine</button>
+  </div>
+</div>
+
+<div class="footer">
+  A modification of <a href="https://chaosgacha.com" target="_blank">BronzDeck's Chaos Gacha</a>
+  by <a href="https://github.com/Benw8888" target="_blank">Benw8888</a>, expanded with entries scraped from the
+  <a href="https://powerlisting.fandom.com/" target="_blank">Superpower Wiki</a> (CC-BY-SA) and rated/described by Claude Opus 4.6.<br>
+  Contribute changes to: <a href="https://github.com/Benw8888/ChaosGacha" target="_blank">Benw8888/ChaosGacha</a>
+</div>
+
+<script>
+// --- Constants ---
+const CATEGORIES = ['ability', 'item', 'trait', 'skill', 'familiar'];
+const TICKETS = [
+  { name: 'Bronze',     min: 0.1, avg: 1.3, max: 3.3 },
+  { name: 'Silver',     min: 0.5, avg: 2.3, max: 4.3 },
+  { name: 'Gold',       min: 1.5, avg: 3.3, max: 5.3 },
+  { name: 'Platinum',   min: 2.5, avg: 4.3, max: 6.3 },
+  { name: 'Diamond',    min: 3.5, avg: 5.3, max: 7.3 },
+  { name: 'Legendary',  min: 4.5, avg: 6.3, max: 8.3 },
+  { name: 'Mythical',   min: 5.5, avg: 7.3, max: 9.3 },
+  { name: 'Divine',     min: 6.5, avg: 8.3, max: 10.0 },
+];
+
+function tierFor(rarity) {
+  if (rarity < 1.0) return { name: 'Trash',        key: 'trash' };
+  if (rarity < 2.0) return { name: 'Common',       key: 'common' };
+  if (rarity < 3.0) return { name: 'Uncommon',     key: 'uncommon' };
+  if (rarity < 4.0) return { name: 'Rare',         key: 'rare' };
+  if (rarity < 5.0) return { name: 'Elite',        key: 'elite' };
+  if (rarity < 6.0) return { name: 'Epic',         key: 'epic' };
+  if (rarity < 7.0) return { name: 'Legendary',    key: 'legendary' };
+  if (rarity < 8.0) return { name: 'Mythical',     key: 'mythical' };
+  if (rarity < 9.0) return { name: 'Divine',       key: 'divine' };
+  return                    { name: 'Transcendent', key: 'transcendent' };
+}
+function tierColor(key) {
+  return getComputedStyle(document.documentElement).getPropertyValue(`--tier-${key}`).trim();
+}
+function tierGlow(key) {
+  const c = tierColor(key);
+  // Convert hex to rgba for glow
+  const m = c.match(/^#([0-9a-f]{6})/i);
+  if (m) {
+    const n = parseInt(m[1], 16);
+    return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, 0.3)`;
+  }
+  return 'rgba(255,255,255,0.15)';
+}
+
+// --- Parsing ---
+function parseGachaFile(text) {
+  const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+  const entries = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    const m = line.match(/^(\d+)\.?\s*(.+?),\s*([\d.]+)\s*$/);
+    if (!m) continue;
+    const id = parseInt(m[1], 10);
+    const name = m[2].trim();
+    const rarity = parseFloat(m[3]);
+    if (isNaN(rarity)) continue;
+    let desc = '';
+    if (i + 1 < lines.length && lines[i + 1].trim().startsWith('#')) {
+      desc = lines[i + 1].trim().slice(1).trim();
+      i++;
+    }
+    const flags = {
+      nsfw: desc.includes('(Nsfw)'),
+      character: desc.includes('(Character)'),
+      scifi: desc.includes('(Tech)'),
+      tome: desc.includes('(Tome)'),
+    };
+    const cleanDesc = desc
+      .replace(/\(Nsfw\)/g, '')
+      .replace(/\(Character\)/g, '')
+      .replace(/\(Tech\)/g, '')
+      .replace(/\(Tome\)/g, '')
+      .trim();
+    entries.push({ id, name, rarity, description: cleanDesc, flags });
+  }
+  return entries;
+}
+
+// --- Rolling (from Gacha.py) ---
+function pickTargetRarity(minR, maxR, avgR, exponent = 4) {
+  const candidates = [];
+  const weights = [];
+  let x = minR;
+  while (x < maxR) {
+    candidates.push(x);
+    x = Math.round((x + 0.1) * 10) / 10;
+    weights.push(1 / Math.pow(exponent, Math.abs(avgR - x)));
+  }
+  return Math.round((weightedChoice(candidates, weights) + 0.1) * 10) / 10;
+}
+function weightedChoice(items, weights) {
+  const total = weights.reduce((a, b) => a + b, 0);
+  if (total <= 0) return items[Math.floor(Math.random() * items.length)];
+  let r = Math.random() * total;
+  for (let i = 0; i < items.length; i++) {
+    r -= weights[i];
+    if (r <= 0) return items[i];
+  }
+  return items[items.length - 1];
+}
+function rollEntry(pool, minR, avgR, maxR, filters) {
+  const entries = pool.filter(e => {
+    if (filters.pgMode && e.flags.nsfw) return false;
+    if (filters.classicFamiliar && e.flags.character) return false;
+    if (filters.noScifi && e.flags.scifi) return false;
+    if (filters.noTome && e.flags.tome) return false;
+    return true;
+  });
+  if (entries.length === 0) return null;
+  for (let attempt = 0; attempt < 50; attempt++) {
+    const target = pickTargetRarity(minR, maxR, avgR, 4);
+    const nearby = entries.filter(e => Math.abs(e.rarity - target) <= 0.2);
+    if (nearby.length === 0) continue;
+    const weights = nearby.map(e => 1 / Math.pow(4, Math.abs(avgR - e.rarity)));
+    const picked = weightedChoice(nearby, weights);
+    const fullPool = entries.filter(e => e.rarity > minR && e.rarity <= maxR);
+    const weightsum = fullPool.reduce((s, e) => s + 1 / Math.pow(4, Math.abs(avgR - e.rarity)), 0);
+    const pickedWeight = 1 / Math.pow(4, Math.abs(avgR - picked.rarity));
+    const odds = weightsum > 0 ? 100 * pickedWeight / weightsum : 0;
+    return { entry: picked, odds };
+  }
+  return null;
+}
+
+// --- State ---
+const state = {
+  data: {},
+  selectedCategory: 'ability',
+  selectedTicket: 0,
+  currentResult: null,
+};
+
+// --- UI ---
+function updateCategoryButtons() {
+  document.querySelectorAll('[data-category]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.category === state.selectedCategory);
+  });
+}
+function updateTicketButtons() {
+  document.querySelectorAll('[data-ticket]').forEach(btn => {
+    btn.classList.toggle('active', parseInt(btn.dataset.ticket, 10) === state.selectedTicket);
+  });
+}
+function applyTicket(idx) {
+  state.selectedTicket = idx;
+  const p = TICKETS[idx];
+  document.getElementById('minInput').value = p.min.toFixed(1);
+  document.getElementById('avgInput').value = p.avg.toFixed(1);
+  document.getElementById('maxInput').value = p.max.toFixed(1);
+  updateTicketButtons();
+}
+function categoryLabel(cat) {
+  return cat.charAt(0).toUpperCase() + cat.slice(1);
+}
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[c]);
+}
+
+function renderResult(result, category) {
+  const box = document.getElementById('resultBox');
+  box.classList.remove('has-result', 'tier-glow');
+  if (!result) {
+    box.style.setProperty('--glow-color', 'transparent');
+    box.innerHTML = `
+      <div class="placeholder">No entries match those filters. Try widening the range.</div>
+      <button class="copy-btn" id="copyBtn">COPY</button>
+    `;
+    state.currentResult = null;
+    document.getElementById('copyBtn').addEventListener('click', copyResult);
+    return;
+  }
+  const { entry, odds } = result;
+  const tier = tierFor(entry.rarity);
+  const color = tierColor(tier.key);
+  const glow = tierGlow(tier.key);
+  box.style.setProperty('--glow-color', glow);
+  box.innerHTML = `
+    <div class="result-content">
+      <div class="result-tier" style="color:${color}">— ${tier.name} ${categoryLabel(category)} —</div>
+      <div class="result-name" style="color:${color}"><span class="result-id">${entry.id}.</span>${escapeHtml(entry.name)}</div>
+      <div class="result-rarity">Rarity ${entry.rarity.toFixed(1)} · ${odds.toFixed(2)}% odds</div>
+      <div class="result-desc">${escapeHtml(entry.description)}</div>
+    </div>
+    <button class="copy-btn" id="copyBtn" title="Copy to clipboard">COPY</button>
+  `;
+  box.classList.add('has-result', 'tier-glow');
+  state.currentResult = { entry, odds, category, tier };
+  document.getElementById('copyBtn').addEventListener('click', copyResult);
+}
+
+function copyResult() {
+  if (!state.currentResult) return;
+  const { entry, category, tier } = state.currentResult;
+  const text = `[${entry.name}]\n|${tier.name} ${categoryLabel(category)}|\n${entry.description}`;
+  const btn = document.getElementById('copyBtn');
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'COPIED';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = 'COPY';
+      btn.classList.remove('copied');
+    }, 1500);
+  }).catch(err => {
+    console.error('Clipboard failed', err);
+    btn.textContent = 'FAILED';
+    setTimeout(() => { btn.textContent = 'COPY'; }, 1500);
+  });
+}
+
+function doRoll() {
+  let cat = state.selectedCategory;
+  if (cat === 'random') {
+    cat = CATEGORIES[Math.floor(Math.random() * CATEGORIES.length)];
+  }
+  const pool = state.data[cat];
+  if (!pool || pool.length === 0) {
+    renderResult(null, cat);
+    return;
+  }
+  const minR = parseFloat(document.getElementById('minInput').value);
+  const avgR = parseFloat(document.getElementById('avgInput').value);
+  const maxR = parseFloat(document.getElementById('maxInput').value);
+  const filters = {
+    pgMode: document.getElementById('pgMode').checked,
+    classicFamiliar: document.getElementById('classicFamiliar').checked,
+    noScifi: document.getElementById('noScifi').checked,
+    noTome: document.getElementById('noTome').checked,
+  };
+  const result = rollEntry(pool, minR, avgR, maxR, filters);
+  renderResult(result, cat);
+}
+
+// --- Font persistence ---
+function applyFont(family) {
+  document.body.style.fontFamily = family;
+  try { localStorage.setItem('chaosgacha_font', family); } catch (e) {}
+}
+function loadSavedFont() {
+  try {
+    const saved = localStorage.getItem('chaosgacha_font');
+    if (saved) {
+      const sel = document.getElementById('fontSelect');
+      const match = Array.from(sel.options).find(o => o.value === saved);
+      if (match) {
+        sel.value = saved;
+        applyFont(saved);
+      }
+    }
+  } catch (e) {}
+}
+
+// --- Options toggle ---
+function initOptionsToggle() {
+  const toggle = document.getElementById('optionsToggle');
+  const panel = document.getElementById('optionsPanel');
+  toggle.addEventListener('click', () => {
+    const open = panel.classList.toggle('open');
+    toggle.textContent = (open ? '▾' : '▸') + ' Options';
+  });
+}
+
+// --- Load data ---
+async function loadData() {
+  const status = document.getElementById('status');
+  const results = await Promise.all(CATEGORIES.map(async (cat) => {
+    try {
+      const res = await fetch(`gachafiles/${cat}.txt`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const text = await res.text();
+      return [cat, parseGachaFile(text)];
+    } catch (err) {
+      console.error(`Failed to load ${cat}:`, err);
+      return [cat, []];
+    }
+  }));
+  results.forEach(([cat, entries]) => { state.data[cat] = entries; });
+  const total = Object.values(state.data).reduce((s, a) => s + a.length, 0);
+  status.textContent = `Loaded ${total.toLocaleString()} entries across ${CATEGORIES.length} categories`;
+  document.getElementById('rollBtn').disabled = false;
+}
+
+// --- Init ---
+document.querySelectorAll('[data-category]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    state.selectedCategory = btn.dataset.category;
+    updateCategoryButtons();
+  });
+});
+document.querySelectorAll('[data-ticket]').forEach(btn => {
+  btn.addEventListener('click', () => applyTicket(parseInt(btn.dataset.ticket, 10)));
+});
+document.getElementById('rollBtn').addEventListener('click', doRoll);
+document.getElementById('copyBtn').addEventListener('click', copyResult);
+document.getElementById('fontSelect').addEventListener('change', (e) => applyFont(e.target.value));
+document.addEventListener('keydown', (e) => {
+  if ((e.key === 'Enter' || e.key === ' ') && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) {
+    e.preventDefault();
+    if (!document.getElementById('rollBtn').disabled) doRoll();
+  }
+});
+
+updateCategoryButtons();
+applyTicket(0);
+initOptionsToggle();
+loadSavedFont();
+loadData();
+</script>
+</body>
+</html>
